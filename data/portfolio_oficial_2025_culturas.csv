@@ -1,0 +1,132 @@
+﻿segmento;familia;classe;cod_sku;sku_descricao;fornecedor;cultura;N;P;K
+Fertilizantes ;Matérias primas ;Nitrogenados;242825;SAM GR;Geral;TRIGO;20;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;242825;SAM GR;Geral;CANOLA;20;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243153;UREIA GR;Geral;MILHO;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243153;UREIA GR;Geral;TRIGO;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243153;UREIA GR;Geral;CANOLA;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243153;UREIA GR;Geral;ARROZ;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243154;UREIA GR NBPT;Geral;MILHO;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243154;UREIA GR NBPT;Geral;TRIGO;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243154;UREIA GR NBPT;Geral;CANOLA;46;0;0
+Fertilizantes ;Matérias primas ;Nitrogenados;243154;UREIA GR NBPT;Geral;ARROZ;46;0;0
+Fertilizantes ;Matérias primas ;Fosfatados;243148;MAP GR;Geral;SOJA;11;52;0
+Fertilizantes ;Matérias primas ;Fosfatados;243148;MAP GR;Geral;MILHO;11;52;0
+Fertilizantes ;Matérias primas ;Fosfatados;243148;MAP GR;Geral;TRIGO;11;52;0
+Fertilizantes ;Matérias primas ;Fosfatados;243148;MAP GR;Geral;CANOLA;11;52;0
+Fertilizantes ;Matérias primas ;Fosfatados;243148;MAP GR;Geral;ARROZ;11;52;0
+Fertilizantes ;Matérias primas ;Fosfatados;243144;DAP GR;Geral;MILHO;18;46;0
+Fertilizantes ;Matérias primas ;Fosfatados;243144;DAP GR;Geral;TRIGO;18;46;0
+Fertilizantes ;Matérias primas ;Fosfatados;243144;DAP GR;Geral;CANOLA;18;46;0
+Fertilizantes ;Matérias primas ;Fosfatados;246294;SSP GR;Geral;SOJA;0;20;0
+Fertilizantes ;Matérias primas ;Fosfatados;243150;TSP GR;Geral;SOJA;0;45;0
+Fertilizantes ;Matérias primas ;Fosfatados;243150;TSP GR;Geral;ARROZ;0;45;0
+Fertilizantes ;Matérias primas ;Potássicos;242703;KLC GR;Geral;SOJA;0;0;60
+Fertilizantes ;Matérias primas ;Potássicos;242703;KLC GR;Geral;MILHO;0;0;60
+Fertilizantes ;Matérias primas ;Potássicos;242703;KLC GR;Geral;TRIGO;0;0;60
+Fertilizantes ;Matérias primas ;Potássicos;242703;KLC GR;Geral;CANOLA;0;0;60
+Fertilizantes ;Matérias primas ;Potássicos;242703;KLC GR;Geral;ARROZ;0;0;60
+Fertilizantes ;Formulados;Tradicional;243026;02 20 20 C/OLEO;Geral;SOJA;02; 20;20
+Fertilizantes ;Formulados;Tradicional;243032;02 20 30 C/OLEO;Geral;SOJA;02; 20;30
+Fertilizantes ;Formulados;Tradicional;243036;02 23 23 C/OLEO;Geral;SOJA;02; 23;23
+Fertilizantes ;Formulados;Tradicional;243054;02 30 15 C/OLEO;Geral;SOJA;02; 30;15
+Fertilizantes ;Formulados;Tradicional;243059;04 17 27 C/OLEO;Geral;SOJA;04; 17;27
+Fertilizantes ;Formulados;Tradicional;243059;04 17 27 C/OLEO;Geral;ARROZ;04; 17;27
+Fertilizantes ;Formulados;Tradicional;244521;04 30 10 C/OLEO;Geral;SOJA;04; 30;10
+Fertilizantes ;Formulados;Tradicional;243075;05 20 20 C/OLEO;Geral;SOJA;05; 20;20
+Fertilizantes ;Formulados;Tradicional;243075;05 20 20 C/OLEO;Geral;MILHO;05; 20;20
+Fertilizantes ;Formulados;Tradicional;243075;05 20 20 C/OLEO;Geral;TRIGO;05; 20;20
+Fertilizantes ;Formulados;Tradicional;243075;05 20 20 C/OLEO;Geral;CANOLA;05; 20;20
+Fertilizantes ;Formulados;Tradicional;243079;05 20 30 C/OLEO;Geral;SOJA;05; 20;30
+Fertilizantes ;Formulados;Tradicional;243079;05 20 30 C/OLEO;Geral;ARROZ;05; 20;30
+Fertilizantes ;Formulados;Tradicional;243082;05 25 25 C/OLEO;Geral;SOJA;05; 25;25
+Fertilizantes ;Formulados;Tradicional;243082;05 25 25 C/OLEO;Geral;MILHO;05; 25;25
+Fertilizantes ;Formulados;Tradicional;243082;05 25 25 C/OLEO;Geral;TRIGO;05; 25;25
+Fertilizantes ;Formulados;Tradicional;243082;05 25 25 C/OLEO;Geral;CANOLA;05; 25;25
+Fertilizantes ;Formulados;Tradicional;243118;09 25 15 C/OLEO;Geral;MILHO;09; 25;15
+Fertilizantes ;Formulados;Tradicional;243118;09 25 15 C/OLEO;Geral;TRIGO;09; 25;15
+Fertilizantes ;Formulados;Tradicional;243118;09 25 15 C/OLEO;Geral;CANOLA;09; 25;15
+Fertilizantes ;Formulados;Tradicional;243115;09 23 29 C/OLEO;Geral;MILHO;09; 23;29
+Fertilizantes ;Formulados;Tradicional;243115;09 23 29 C/OLEO;Geral;TRIGO;09; 23;29
+Fertilizantes ;Formulados;Tradicional;243115;09 23 29 C/OLEO;Geral;CANOLA;09; 23;29
+Fertilizantes ;Formulados;Tradicional;243115;09 23 29 C/OLEO;Geral;ARROZ;09; 23;29
+Fertilizantes ;Formulados;Tradicional;243126;10 20 10 C/OLEO;Geral;MILHO;10; 20;10
+Fertilizantes ;Formulados;Tradicional;243126;10 20 10 C/OLEO;Geral;TRIGO;10; 20;10
+Fertilizantes ;Formulados;Tradicional;243126;10 20 10 C/OLEO;Geral;CANOLA;10; 20;10
+Fertilizantes ;Formulados;Tradicional;244503;10 20 20 C/OLEO;Geral;MILHO;10; 20;20
+Fertilizantes ;Formulados;Tradicional;244503;10 20 20 C/OLEO;Geral;TRIGO;10; 20;20
+Fertilizantes ;Formulados;Tradicional;244503;10 20 20 C/OLEO;Geral;CANOLA;10; 20;20
+Fertilizantes ;Formulados;Tradicional;243132;10 30 20 C/OLEO;Geral;MILHO;10; 30;20
+Fertilizantes ;Formulados;Tradicional;243132;10 30 20 C/OLEO;Geral;TRIGO;10; 30;20
+Fertilizantes ;Formulados;Tradicional;243132;10 30 20 C/OLEO;Geral;CANOLA;10; 30;20
+Fertilizantes ;Formulados;Tradicional;243151;30 00 20 C/OLEO;Geral;ARROZ;30; 00;20
+Fertilizantes ;Formulados;Tradicional;244842;40 00 00 5S;Geral;MILHO;40; 00;00
+Fertilizantes ;Formulados;Tradicional;244842;40 00 00 5S;Geral;TRIGO;40; 00;00
+Fertilizantes ;Formulados;Tradicional;244842;40 00 00 5S;Geral;CANOLA;40; 00;00
+Fertilizantes ;Formulados;Diferenciado;243035;02 23 23 C/MICRO;Geral;SOJA;02; 23;23
+Fertilizantes ;Formulados;Diferenciado;246110;09 25 15 C/MICRO;Geral;MILHO;09; 25;15
+Fertilizantes ;Formulados;Diferenciado;246110;09 25 15 C/MICRO;Geral;TRIGO;09; 25;15
+Fertilizantes ;Formulados;Diferenciado;246110;09 25 15 C/MICRO;Geral;CANOLA;09; 25;15
+Fertilizantes ;Formulados;Diferenciado;245269;40 00 00 5S NBPT;Geral;MILHO;40; 00;00
+Fertilizantes ;Formulados;Diferenciado;245269;40 00 00 5S NBPT;Geral;TRIGO;40; 00;00
+Fertilizantes ;Formulados;Diferenciado;245269;40 00 00 5S NBPT;Geral;CANOLA;40; 00;00
+Fertilizantes ;Formulados;Diferenciado;245269;40 00 00 5S NBPT;Geral;ARROZ;40; 00;00
+Fertilizantes ;Formulados;Premium;244636;00 00 58 0,5B ASPIRE;Mosaic;SOJA;00; 00;58
+Fertilizantes ;Formulados;Premium;244636;00 00 58 0,5B ASPIRE;Mosaic;MILHO;00; 00;58
+Fertilizantes ;Formulados;Premium;244636;00 00 58 0,5B ASPIRE;Mosaic;TRIGO;00; 00;58
+Fertilizantes ;Formulados;Premium;244636;00 00 58 0,5B ASPIRE;Mosaic;CANOLA;00; 00;58
+Fertilizantes ;Formulados;Premium;244636;00 00 58 0,5B ASPIRE;Mosaic;ARROZ;00; 00;58
+Fertilizantes ;Formulados;Premium;245802;03 21 21 PERFORMA PLUS;Mosaic;SOJA;03; 21;21
+Fertilizantes ;Formulados;Premium;245750;03 23 19 4S YARABASA;Yara;SOJA;03; 23;19
+Fertilizantes ;Formulados;Premium;246860;04 28 08 10Ca 7S YARABASA;Yara;SOJA;04; 28;08
+Fertilizantes ;Formulados;Premium;246861;06 22 22 2Ca 6S CROPLEX;Eurochem;SOJA;06; 22;22
+Fertilizantes ;Formulados;Premium;244224;07 18 27 MICRO ESSENTIALS S15 ;Mosaic;ARROZ;07; 18;27
+Fertilizantes ;Formulados;Premium;244226;07 33 12 MICRO ESSENTIALS S9;Mosaic;SOJA;07; 33;12
+Fertilizantes ;Formulados;Premium;244226;07 33 12 MICRO ESSENTIALS S9;Mosaic;MILHO;07; 33;12
+Fertilizantes ;Formulados;Premium;244226;07 33 12 MICRO ESSENTIALS S9;Mosaic;TRIGO;07; 33;12
+Fertilizantes ;Formulados;Premium;244226;07 33 12 MICRO ESSENTIALS S9;Mosaic;CANOLA;07; 33;12
+Fertilizantes ;Formulados;Premium;246854;07 34 10 2Ca 5S CROPLEX;Eurochem;SOJA;07; 34;10
+Fertilizantes ;Formulados;Premium;246854;07 34 10 2Ca 5S CROPLEX;Eurochem;MILHO;07; 34;10
+Fertilizantes ;Formulados;Premium;246854;07 34 10 2Ca 5S CROPLEX;Eurochem;TRIGO;07; 34;10
+Fertilizantes ;Formulados;Premium;246854;07 34 10 2Ca 5S CROPLEX;Eurochem;CANOLA;07; 34;10
+Fertilizantes ;Formulados;Premium;246529;09 15 15 4Ca 10S YARABASA;Yara;MILHO;09; 15;15
+Fertilizantes ;Formulados;Premium;246529;09 15 15 4Ca 10S YARABASA;Yara;TRIGO;09; 15;15
+Fertilizantes ;Formulados;Premium;246529;09 15 15 4Ca 10S YARABASA;Yara;CANOLA;09; 15;15
+Fertilizantes ;Formulados;Premium;244186;09 18 08 4Ca 10S SUPERSTART;Yara;MILHO;09; 18;08
+Fertilizantes ;Formulados;Premium;244186;09 18 08 4Ca 10S SUPERSTART;Yara;TRIGO;09; 18;08
+Fertilizantes ;Formulados;Premium;244186;09 18 08 4Ca 10S SUPERSTART;Yara;CANOLA;09; 18;08
+Fertilizantes ;Formulados;Premium;243888;09 24 14 MICRO ESSENTIALS S15;Mosaic;MILHO;09; 24;14
+Fertilizantes ;Formulados;Premium;243888;09 24 14 MICRO ESSENTIALS S15;Mosaic;TRIGO;09; 24;14
+Fertilizantes ;Formulados;Premium;243888;09 24 14 MICRO ESSENTIALS S15;Mosaic;CANOLA;09; 24;14
+Fertilizantes ;Formulados;Premium;246117;09 40 00 5Ca 5S YARABASA;Yara;MILHO;09; 40;00
+Fertilizantes ;Formulados;Premium;246117;09 40 00 5Ca 5S YARABASA;Yara;TRIGO;09; 40;00
+Fertilizantes ;Formulados;Premium;246117;09 40 00 5Ca 5S YARABASA;Yara;CANOLA;09; 40;00
+Fertilizantes ;Formulados;Premium;246117;09 40 00 5Ca 5S YARABASA;Yara;ARROZ;09; 40;00
+Fertilizantes ;Formulados;Premium;244810;10 18 18 MICRO ESSENTIALS S15;Mosaic;MILHO;10; 18;18
+Fertilizantes ;Formulados;Premium;244810;10 18 18 MICRO ESSENTIALS S15;Mosaic;TRIGO;10; 18;18
+Fertilizantes ;Formulados;Premium;244810;10 18 18 MICRO ESSENTIALS S15;Mosaic;CANOLA;10; 18;18
+Fertilizantes ;Formulados;Premium;246855;10 26 26 FERTIVA;Eurochem;MILHO;10; 26;26
+Fertilizantes ;Formulados;Premium;246855;10 26 26 FERTIVA;Eurochem;TRIGO;10; 26;26
+Fertilizantes ;Formulados;Premium;246855;10 26 26 FERTIVA;Eurochem;CANOLA;10; 26;26
+Fertilizantes ;Formulados;Premium;246855;10 26 26 FERTIVA;Eurochem;ARROZ;10; 26;26
+Fertilizantes ;Formulados;Premium;245436;10 46 00 MICRO ESSENTIALS S9;Mosaic;SOJA;10; 46;00
+Fertilizantes ;Formulados;Premium;245436;10 46 00 MICRO ESSENTIALS S9;Mosaic;ARROZ;10; 46;00
+Fertilizantes ;Formulados;Premium;246856;11 24 12 10S CROPLEX;Eurochem;MILHO;11; 24;12
+Fertilizantes ;Formulados;Premium;246856;11 24 12 10S CROPLEX;Eurochem;TRIGO;11; 24;12
+Fertilizantes ;Formulados;Premium;246856;11 24 12 10S CROPLEX;Eurochem;CANOLA;11; 24;12
+Fertilizantes ;Formulados;Premium;246620;12 40 00 10S CROPLEX;Eurochem;SOJA;12; 40;00
+Fertilizantes ;Formulados;Premium;246620;12 40 00 10S CROPLEX;Eurochem;MILHO;12; 40;00
+Fertilizantes ;Formulados;Premium;246620;12 40 00 10S CROPLEX;Eurochem;TRIGO;12; 40;00
+Fertilizantes ;Formulados;Premium;246620;12 40 00 10S CROPLEX;Eurochem;ARROZ;12; 40;00
+Fertilizantes ;Formulados;Premium;246404;13 15 11 MICRO ESSENTIALS S15 PPLUS;Mosaic;CANOLA;13; 15;11
+Fertilizantes ;Formulados;Premium;245754;13 24 12 3S 1,2Mg YARAMILA;Yara;MILHO;13; 24;12
+Fertilizantes ;Formulados;Premium;245754;13 24 12 3S 1,2Mg YARAMILA;Yara;TRIGO;13; 24;12
+Fertilizantes ;Formulados;Premium;245754;13 24 12 3S 1,2Mg YARAMILA;Yara;CANOLA;13; 24;12
+Fertilizantes ;Formulados;Premium;243139;13 33 00 MICRO ESSENTIALS S15;Mosaic;MILHO;13; 33;00
+Fertilizantes ;Formulados;Premium;243139;13 33 00 MICRO ESSENTIALS S15;Mosaic;TRIGO;13; 33;00
+Fertilizantes ;Formulados;Premium;246857;14 14 14 11S FERTIVA;Eurochem;CANOLA;14; 14;14
+Fertilizantes ;Formulados;Premium;242702;27 00 00 5Ca 3S YARABELA;Yara;MILHO;27; 00;00
+Fertilizantes ;Formulados;Premium;242702;27 00 00 5Ca 3S YARABELA;Yara;TRIGO;27; 00;00
+Fertilizantes ;Formulados;Premium;242702;27 00 00 5Ca 3S YARABELA;Yara;CANOLA;27; 00;00
+Fertilizantes ;Formulados;Premium;246655;40 00 00 5S YARAVERA;Yara;MILHO;40; 00;00
+Fertilizantes ;Formulados;Premium;246655;40 00 00 5S YARAVERA;Yara;TRIGO;40; 00;00
+Fertilizantes ;Formulados;Premium;246655;40 00 00 5S YARAVERA;Yara;ARROZ;40; 00;00
