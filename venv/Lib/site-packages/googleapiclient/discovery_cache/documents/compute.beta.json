@@ -22201,6 +22201,12 @@
 "pattern": "(securityPolicies/)?[0-9]{0,20}",
 "required": true,
 "type": "string"
+},
+"updateMask": {
+"description": "Indicates fields to be cleared as part of this request.",
+"format": "google-fieldmask",
+"location": "query",
+"type": "string"
 }
 },
 "path": "locations/global/securityPolicies/{securityPolicy}",
@@ -22240,6 +22246,12 @@
 "location": "path",
 "pattern": "(securityPolicies/)?[0-9]{0,20}",
 "required": true,
+"type": "string"
+},
+"updateMask": {
+"description": "Indicates fields to be cleared as part of this request.",
+"format": "google-fieldmask",
+"location": "query",
 "type": "string"
 }
 },
@@ -23124,7 +23136,8 @@
 ]
 },
 "moveDisk": {
-"description": "Moves a persistent disk from one zone to another.",
+"deprecated": true,
+"description": "Starting September 29, 2025, you can't use the moveDisk API on new projects. To move a disk to a different region or zone, follow the steps in [Change the location of a disk](https://{$universe.dns_names.final_documentation_domain}/compute/docs/disks/migrate-to-hyperdisk#migrate-to-hd). Projects that already use the moveDisk API can continue usage until September 29, 2026. Starting November 1, 2025, API responses will include a warning message in the response body about the upcoming deprecation. You can skip the message to continue using the service without interruption.",
 "flatPath": "projects/{project}/moveDisk",
 "httpMethod": "POST",
 "id": "compute.projects.moveDisk",
@@ -45753,7 +45766,7 @@
 }
 }
 },
-"revision": "20250902",
+"revision": "20250909",
 "rootUrl": "https://compute.googleapis.com/",
 "schemas": {
 "AWSV4Signature": {
@@ -68794,6 +68807,13 @@ false
 "selfLink": {
 "description": "[Output Only] Server-defined URL for the resource.",
 "type": "string"
+},
+"singleRegionProductionCriticalPeerLocations": {
+"description": "[Output Only] URLs of the other locations that can pair up with this location to support Single-Region 99.99% SLA. E.g. iad-zone1-1 and iad-zone2-5467 are Single-Region 99.99% peer locations of each other.",
+"items": {
+"type": "string"
+},
+"type": "array"
 },
 "status": {
 "description": "[Output Only] The status of this InterconnectLocation, which can take one of the following values: - CLOSED: The InterconnectLocation is closed and is unavailable for provisioning new Interconnects. - AVAILABLE: The InterconnectLocation is available for provisioning new Interconnects. ",

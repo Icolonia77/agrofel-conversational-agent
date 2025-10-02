@@ -21606,6 +21606,48 @@
 "https://www.googleapis.com/auth/compute"
 ]
 },
+"cancelRequestRemovePeering": {
+"description": "Cancel requests to remove a peering from the specified network. Applicable only for PeeringConnection with update_strategy=CONSENSUS. Cancels a request to remove a peering from the specified network.",
+"flatPath": "projects/{project}/global/networks/{network}/cancelRequestRemovePeering",
+"httpMethod": "POST",
+"id": "compute.networks.cancelRequestRemovePeering",
+"parameterOrder": [
+"project",
+"network"
+],
+"parameters": {
+"network": {
+"description": "Name of the network resource to remove peering from.",
+"location": "path",
+"pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?|[1-9][0-9]{0,19}",
+"required": true,
+"type": "string"
+},
+"project": {
+"description": "Project ID for this request.",
+"location": "path",
+"pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+"required": true,
+"type": "string"
+},
+"requestId": {
+"description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported ( 00000000-0000-0000-0000-000000000000).",
+"location": "query",
+"type": "string"
+}
+},
+"path": "projects/{project}/global/networks/{network}/cancelRequestRemovePeering",
+"request": {
+"$ref": "NetworksCancelRequestRemovePeeringRequest"
+},
+"response": {
+"$ref": "Operation"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform",
+"https://www.googleapis.com/auth/compute"
+]
+},
 "delete": {
 "description": "Deletes the specified network.",
 "flatPath": "projects/{project}/global/networks/{network}",
@@ -24101,6 +24143,12 @@
 "pattern": "(securityPolicies/)?[0-9]{0,20}",
 "required": true,
 "type": "string"
+},
+"updateMask": {
+"description": "Indicates fields to be cleared as part of this request.",
+"format": "google-fieldmask",
+"location": "query",
+"type": "string"
 }
 },
 "path": "locations/global/securityPolicies/{securityPolicy}",
@@ -24140,6 +24188,12 @@
 "location": "path",
 "pattern": "(securityPolicies/)?[0-9]{0,20}",
 "required": true,
+"type": "string"
+},
+"updateMask": {
+"description": "Indicates fields to be cleared as part of this request.",
+"format": "google-fieldmask",
+"location": "query",
 "type": "string"
 }
 },
@@ -25024,7 +25078,8 @@
 ]
 },
 "moveDisk": {
-"description": "Moves a persistent disk from one zone to another.",
+"deprecated": true,
+"description": "Starting September 29, 2025, you can't use the moveDisk API on new projects. To move a disk to a different region or zone, follow the steps in [Change the location of a disk](https://{$universe.dns_names.final_documentation_domain}/compute/docs/disks/migrate-to-hyperdisk#migrate-to-hd). Projects that already use the moveDisk API can continue usage until September 29, 2026. Starting November 1, 2025, API responses will include a warning message in the response body about the upcoming deprecation. You can skip the message to continue using the service without interruption.",
 "flatPath": "projects/{project}/moveDisk",
 "httpMethod": "POST",
 "id": "compute.projects.moveDisk",
@@ -52501,7 +52556,7 @@
 }
 }
 },
-"revision": "20250902",
+"revision": "20250909",
 "rootUrl": "https://compute.googleapis.com/",
 "schemas": {
 "AWSV4Signature": {
@@ -87150,13 +87205,17 @@ false
 "enum": [
 "DELETE_ACKNOWLEDGED",
 "DELETE_STATUS_UNSPECIFIED",
+"LOCAL_CANCEL_REQUESTED",
 "LOCAL_DELETE_REQUESTED",
+"PEER_CANCEL_REQUESTED",
 "PEER_DELETE_REQUESTED"
 ],
 "enumDescriptions": [
 "Both network admins have agreed this consensus peering connection can be deleted.",
 "",
+"The local network admin requested to cancel their delete request after DELETE_ACKNOWLEDGED.",
 "Network admin has requested deletion of this peering connection.",
+"The peer network admin requested to cancel their delete request after DELETE_ACKNOWLEDGED.",
 "The peer network admin has requested deletion of this peering connection."
 ],
 "type": "string"
@@ -88750,6 +88809,16 @@ false
 },
 "peerNetwork": {
 "description": "URL of the peer network. It can be either full URL or partial URL. The peer network may belong to a different project. If the partial URL does not contain project, it is assumed that the peer network is in the same project as the current network.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"NetworksCancelRequestRemovePeeringRequest": {
+"id": "NetworksCancelRequestRemovePeeringRequest",
+"properties": {
+"name": {
+"description": "Name of the peering, which should conform to RFC1035.",
 "type": "string"
 }
 },
@@ -103101,6 +103170,10 @@ false
 "description": "IPv6 address of the interface inside Google Cloud Platform.",
 "type": "string"
 },
+"linkedCustomHardware": {
+"description": "The linked custom hardware resource. The URI of the custom hardware link attachment is where you will establish the BGP session from the Cloud Router. This link attachment must reside in the same subnetwork as the associated router interface.",
+"type": "string"
+},
 "managementType": {
 "description": "[Output Only] The resource that configures and manages this BGP peer. - MANAGED_BY_USER is the default value and can be managed by you or other users - MANAGED_BY_ATTACHMENT is a BGP peer that is configured and managed by Cloud Interconnect, specifically by an InterconnectAttachment of type PARTNER. Google automatically creates, updates, and deletes this type of BGP peer when the PARTNER InterconnectAttachment is created, updated, or deleted. ",
 "enum": [
@@ -103868,6 +103941,10 @@ false
 },
 "ipv6NexthopAddress": {
 "description": "IPv6 address of the local BGP interface.",
+"type": "string"
+},
+"linkedCustomHardware": {
+"description": "The URI of the linked custom hardware resource, CustomHardwareLinkAttachment. This CustomHardwareLinkAttachment resource is the one that will establish the BGP session from the Cloud Router.",
 "type": "string"
 },
 "linkedVpnTunnel": {
