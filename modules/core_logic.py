@@ -14,7 +14,6 @@ def extract_npk_from_text(text: str):
     Tenta extrair padrão NPK de uma string (ex: "10 20 20" ou "10-20-20").
     Retorna tupla (N, P, K) ou None.
     """
-    # Procura por padrão tipo: número espaço/hífen número espaço/hífen número
     pattern = r'(\d+)\s*[-\s]\s*(\d+)\s*[-\s]\s*(\d+)'
     match = re.search(pattern, text)
     if match:
@@ -37,11 +36,20 @@ def find_product_by_name(product_name: str, portfolio: pd.DataFrame, similarity_
         return exact_match[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].to_dict('records')
     
     # 2. Busca por contenção (parcial)
-    partial_match = portfolio[portfolio['sku_descricao'].str.contains(product_name_clean, case=False, na=False)]
+    partial_match = portfolio[portfolio['sku_descricao'].str.contains(product_name_clean, case=False, na=False, regex=False)]
     if not partial_match.empty:
-        return partial_match[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].head(5).to_dict('records')
+        return partial_match[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].head(10).to_dict('records')
     
-    # 3. Busca por NPK se o usuário digitou números tipo "10 20 20"
+    # 3. Busca por palavras-chave individuais
+    words = product_name_clean.split()
+    if len(words) > 0:
+        for word in words:
+            if len(word) >= 3:
+                word_match = portfolio[portfolio['sku_descricao'].str.contains(word, case=False, na=False, regex=False)]
+                if not word_match.empty:
+                    return word_match[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].head(10).to_dict('records')
+    
+    # 4. Busca por NPK se o usuário digitou números tipo "10 20 20"
     npk_search = extract_npk_from_text(product_name)
     if npk_search:
         n_val, p_val, k_val = npk_search
@@ -53,17 +61,17 @@ def find_product_by_name(product_name: str, portfolio: pd.DataFrame, similarity_
         if not npk_match.empty:
             return npk_match[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].to_dict('records')
     
-    # 4. Busca fuzzy (similaridade de string)
+    # 5. Busca fuzzy (similaridade de string)
     portfolio_copy = portfolio.copy()
     portfolio_copy['similarity'] = portfolio_copy['sku_descricao'].apply(
         lambda x: similarity_score(str(x), product_name_clean)
     )
     
-    fuzzy_matches = portfolio_copy[portfolio_copy['similarity'] >= similarity_threshold]
+    fuzzy_matches = portfolio_copy[portfolio_copy['similarity'] >= max(0.3, similarity_threshold - 0.2)]
     fuzzy_matches = fuzzy_matches.sort_values('similarity', ascending=False)
     
     if not fuzzy_matches.empty:
-        return fuzzy_matches[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].head(5).to_dict('records')
+        return fuzzy_matches[['cod_sku', 'sku_descricao', 'N', 'P', 'K']].head(10).to_dict('records')
     
     return []
 
@@ -94,17 +102,14 @@ def find_similar_products_by_npk(cod_sku_ref: str, portfolio: pd.DataFrame, top_
 def find_alternatives_by_npk(product_name: str, portfolio: pd.DataFrame):
     """
     Quando um produto não é encontrado, busca alternativas com NPK similar.
-    Útil para quando o usuário digita um nome aproximado ou NPK.
     """
     if portfolio is None:
         return []
     
-    # Tenta extrair NPK do texto fornecido
     npk_values = extract_npk_from_text(product_name)
     
     if npk_values:
         n_val, p_val, k_val = npk_values
-        # Busca produtos com NPK similar (±2 de diferença em cada componente)
         tolerance = 2
         similar = portfolio[
             (portfolio['N'].between(n_val - tolerance, n_val + tolerance)) &
@@ -120,12 +125,23 @@ def find_alternatives_by_npk(product_name: str, portfolio: pd.DataFrame):
 def get_product_price(cod_sku: str, precos: pd.DataFrame):
     """
     Obtém o preço de um produto específico pelo seu cod_sku.
+    Retorna o dicionário com informações de preço ou None.
     """
-    if precos is None:
+    if precos is None or precos.empty:
         return None
-    price_info = precos[precos['cod_sku'] == cod_sku]
+    
+    # Garante que cod_sku é string e limpa espaços
+    cod_sku_clean = str(cod_sku).strip()
+    
+    # Busca o preço - garantindo que a coluna cod_sku também está limpa
+    precos_copy = precos.copy()
+    precos_copy['cod_sku'] = precos_copy['cod_sku'].astype(str).str.strip()
+    
+    price_info = precos_copy[precos_copy['cod_sku'] == cod_sku_clean]
+    
     if not price_info.empty:
         return price_info.iloc[0].to_dict()
+    
     return None
 
 def find_vendor_by_cep(cep: str, pedidos: pd.DataFrame):
@@ -170,32 +186,32 @@ def recomendar_por_cultura(cultura: str, portfolio: pd.DataFrame):
 def calcular_valor_total(product_name: str, quantity: int, portfolio: pd.DataFrame, precos: pd.DataFrame):
     """
     Calcula o valor total de um item do pedido.
-    Retorna tupla: (valor_total, cod_sku, nome_produto) ou (None, None, None) se não encontrado.
+    Retorna tupla: (valor_total, cod_sku, nome_produto, preco_unitario) ou (None, cod_sku, nome_produto, None) se não encontrado.
     """
     if portfolio is None or precos is None:
-        return None, None, None
+        return None, None, None, None
 
     # Busca o produto usando a função melhorada
     products_found = find_product_by_name(product_name, portfolio)
     
     if not products_found:
-        return None, None, None
+        return None, None, None, None
     
     # Pega o primeiro resultado (mais relevante)
     product_info = products_found[0]
     cod_sku = product_info['cod_sku']
     nome_produto = product_info['sku_descricao']
     
-    # Busca o preço
-    price_info = precos[precos['cod_sku'] == cod_sku]
+    # Busca o preço com a função corrigida
+    price_info = get_product_price(cod_sku, precos)
     
-    if price_info.empty or pd.isna(price_info.iloc[0]['preco']):
-        return None, cod_sku, nome_produto
+    if price_info is None or pd.isna(price_info.get('preco')):
+        return None, cod_sku, nome_produto, None
     
-    unit_price = float(price_info.iloc[0]['preco'])
+    unit_price = float(price_info['preco'])
     total_value = unit_price * quantity
     
-    return total_value, cod_sku, nome_produto
+    return total_value, cod_sku, nome_produto, unit_price
 
 
 

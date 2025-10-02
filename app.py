@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import re
+import pandas as pd
 from dotenv import load_dotenv
 from modules.data_handler import load_data
 from modules.core_logic import (
@@ -11,6 +12,7 @@ from modules.core_logic import (
     find_similar_products_by_npk,
     extract_npk_from_text,
     find_vendor_by_cep,
+    get_product_price,
 )
 from modules.llm_handler import ConversationalAgent
 
@@ -43,24 +45,46 @@ if "carrinho" not in st.session_state:
     st.session_state.carrinho = []
 if "aguardando_cep" not in st.session_state:
     st.session_state.aguardando_cep = False
+if "aguardando_quantidade" not in st.session_state:
+    st.session_state.aguardando_quantidade = False
+if "aguardando_confirmacao_carrinho" not in st.session_state:
+    st.session_state.aguardando_confirmacao_carrinho = False
 if "vendedor_atual" not in st.session_state:
     st.session_state.vendedor_atual = None
+if "ultimo_produto_cod_sku" not in st.session_state:
+    st.session_state.ultimo_produto_cod_sku = None
+if "ultimo_produto_nome" not in st.session_state:
+    st.session_state.ultimo_produto_nome = None
+if "ultimo_produto_quantidade" not in st.session_state:
+    st.session_state.ultimo_produto_quantidade = None
+if "ultimo_produto_valor" not in st.session_state:
+    st.session_state.ultimo_produto_valor = None
 
 # --- Exibição do Chat ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- Função Helper para Parse do Pedido ---
-def parse_order_request(text: str):
-    """
-    Tenta extrair uma quantidade e um nome de produto de uma string.
-    Ex: "Quero 20 unidades de 09 25 15 C/MICRO" -> (20, "09 25 15 C/MICRO")
-    """
-    # Padrões comuns de pedido
+# --- Funções Helper ---
+def extract_quantity_from_text(text: str):
+    """Extrai quantidade de um texto."""
     patterns = [
-        r'(\d+)\s*(?:unidades?|bags?|caixas?|sacos?|kg|toneladas?)?\s*(?:de|do)?\s*(.+)',
-        r'(?:quero|preciso|gostaria)\s*(?:de)?\s*(\d+)\s*(?:unidades?|bags?|caixas?|toneladas?)?\s*(?:de|do)?\s*(.+)',
+        r'(\d+)\s*(?:toneladas?|tons?|t\b)',
+        r'(\d+)\s*(?:unidades?|bags?|caixas?|sacos?|kg)',
+        r'(?:quero|preciso|gostaria)\s*(\d+)',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+    return None
+
+def parse_order_request(text: str):
+    """Tenta extrair quantidade e nome de produto."""
+    patterns = [
+        r'(\d+)\s*(?:unidades?|bags?|caixas?|sacos?|kg|toneladas?)\s*(?:de|do)\s*(.+)',
+        r'(?:quero|preciso|gostaria|queria)\s*(?:de)?\s*(\d+)\s*(?:unidades?|bags?|caixas?|toneladas?|sacos?)\s*(?:de|do)?\s*(.+)',
     ]
     
     for pattern in patterns:
@@ -68,12 +92,24 @@ def parse_order_request(text: str):
         if match:
             quantity = int(match.group(1))
             product_name = match.group(2).strip()
-            # Remove palavras desnecessárias do final
             product_name = re.sub(r'\s*(por favor|obrigado|obrigada)$', '', product_name, flags=re.IGNORECASE)
             if len(product_name) >= 3:
                 return quantity, product_name
     
     return None, None
+
+def is_positive_confirmation(text: str) -> bool:
+    """Verifica se é uma confirmação positiva (sim, ok, pode, etc)."""
+    confirmations = [
+        'sim', 'yes', 'ok', 'pode', 'podes', 'confirmo', 'confirmar', 
+        'isso', 'correto', 'certo', 'exato', 'perfeito', 'adicionar',
+        'adicione', 'quero', 'aceito'
+    ]
+    text_lower = text.lower().strip()
+    words = text_lower.split()
+    if len(words) <= 5:
+        return any(conf in text_lower for conf in confirmations)
+    return False
 
 def is_greeting(text: str) -> bool:
     """Verifica se a mensagem é uma saudação."""
@@ -82,14 +118,40 @@ def is_greeting(text: str) -> bool:
     return any(greeting in text_lower for greeting in greetings)
 
 def is_vendor_request(text: str) -> bool:
-    """Verifica se o cliente está pedindo para falar com vendedor."""
+    """Verifica se o cliente está EXPLICITAMENTE pedindo para falar com vendedor."""
     vendor_keywords = [
-        'vendedor', 'atendente', 'humano', 'pessoa', 'representante',
-        'falar com alguém', 'falar com alguem', 'atendimento', 'suporte',
-        'comercial', 'vendas', 'encaminhar'
+        'falar com vendedor', 'falar com atendente', 'falar com humano',
+        'quero vendedor', 'preciso vendedor', 'encaminhar para vendedor',
+        'encaminhar pedido', 'finalizar pedido', 'fechar pedido',
+        'falar com comercial', 'falar com suporte', 'encaminhar para o vendedor'
     ]
     text_lower = text.lower().strip()
     return any(keyword in text_lower for keyword in vendor_keywords)
+
+def is_similar_products_request(text: str) -> bool:
+    """Verifica se o cliente está pedindo produtos similares."""
+    similar_keywords = [
+        'similar', 'similares', 'parecido', 'parecidos', 'alternativa', 'alternativas',
+        'outro', 'outros', 'mais opções', 'mais opcoes', 'outras opções', 'outras opcoes',
+        'equivalente', 'equivalentes', 'substituto', 'substitutos', 'lista', 'liste', 'mostre'
+    ]
+    text_lower = text.lower().strip()
+    return any(keyword in text_lower for keyword in similar_keywords)
+
+def is_quantity_response(text: str) -> bool:
+    """Verifica se o cliente está respondendo com uma quantidade."""
+    quantity_patterns = [
+        r'\d+\s*(?:toneladas?|tons?|unidades?|bags?|caixas?|sacos?|kg)',
+        r'(?:quero|preciso|gostaria)\s*\d+',
+    ]
+    text_lower = text.lower().strip()
+    return any(re.search(pattern, text_lower, re.IGNORECASE) for pattern in quantity_patterns)
+
+def is_add_to_cart(text: str) -> bool:
+    """Verifica se o cliente quer adicionar ao carrinho."""
+    cart_keywords = ['adicionar', 'add', 'carrinho', 'incluir', 'colocar no carrinho', 'adicione']
+    text_lower = text.lower().strip()
+    return any(keyword in text_lower for keyword in cart_keywords)
 
 def is_valid_cep(text: str) -> bool:
     """Verifica se o texto contém um CEP válido (8 dígitos)."""
@@ -104,8 +166,7 @@ def extract_cep(text: str) -> str:
     return None
 
 def contains_cep(text: str) -> bool:
-    """Verifica se o texto contém um CEP (para detectar CEP inline)."""
-    # Procura por padrão de CEP: 12345-678 ou 12345678
+    """Verifica se o texto contém um CEP."""
     cep_pattern = r'\b\d{5}-?\d{3}\b'
     return re.search(cep_pattern, text) is not None
 
@@ -119,194 +180,296 @@ if prompt := st.chat_input("Digite o nome de um produto, cultura ou sua dúvida.
         with st.spinner("Analisando seu pedido..."):
             contexto_para_llm = "Contexto geral da conversa."
             
+            # --- VERIFICA SE ESTÁ AGUARDANDO CONFIRMAÇÃO PARA ADICIONAR AO CARRINHO ---
+            if st.session_state.aguardando_confirmacao_carrinho and is_positive_confirmation(prompt):
+                item_info = {
+                    'produto': st.session_state.ultimo_produto_nome,
+                    'quantidade': st.session_state.ultimo_produto_quantidade,
+                    'valor': st.session_state.ultimo_produto_valor,
+                    'cod_sku': st.session_state.ultimo_produto_cod_sku
+                }
+                st.session_state.carrinho.append(item_info)
+                
+                # Monta resumo do carrinho
+                resumo_carrinho = "Carrinho atualizado:\n"
+                for i, item in enumerate(st.session_state.carrinho):
+                    resumo_carrinho += f"{i+1}. {item['produto']} - {item['quantidade']} ton"
+                    if item['valor']:
+                        resumo_carrinho += f" (R$ {item['valor']:.2f})"
+                    resumo_carrinho += "\n"
+                
+                contexto_para_llm = (
+                    f"Cliente confirmou adição de {st.session_state.ultimo_produto_quantidade} toneladas "
+                    f"de '{st.session_state.ultimo_produto_nome}' ao carrinho. "
+                    f"\n\n{resumo_carrinho}\n"
+                    f"Total de itens: {len(st.session_state.carrinho)}. "
+                    "Confirme adição com sucesso, mostre resumo do carrinho, "
+                    "pergunte se quer adicionar mais produtos. **NÃO oferecer vendedor**."
+                )
+                
+                st.session_state.aguardando_confirmacao_carrinho = False
+            
+            # --- ADICIONAR AO CARRINHO EXPLICITAMENTE ---
+            elif is_add_to_cart(prompt) and st.session_state.ultimo_produto_nome:
+                item_info = {
+                    'produto': st.session_state.ultimo_produto_nome,
+                    'quantidade': st.session_state.ultimo_produto_quantidade,
+                    'valor': st.session_state.ultimo_produto_valor,
+                    'cod_sku': st.session_state.ultimo_produto_cod_sku
+                }
+                st.session_state.carrinho.append(item_info)
+                
+                contexto_para_llm = (
+                    f"Cliente adicionou '{st.session_state.ultimo_produto_nome}' ao carrinho. "
+                    f"Total: {len(st.session_state.carrinho)} itens. "
+                    "Confirme e pergunte se quer mais. **NÃO oferecer vendedor**."
+                )
+            
+            # --- VERIFICA SE ESTÁ AGUARDANDO QUANTIDADE ---
+            elif st.session_state.aguardando_quantidade and is_quantity_response(prompt):
+                quantity = extract_quantity_from_text(prompt)
+                
+                if quantity and st.session_state.ultimo_produto_cod_sku:
+                    total_value, cod_sku, nome_real, unit_price = calcular_valor_total(
+                        st.session_state.ultimo_produto_nome,
+                        quantity,
+                        portfolio,
+                        precos
+                    )
+                    
+                    if total_value is not None and unit_price is not None:
+                        st.session_state.ultimo_produto_quantidade = quantity
+                        st.session_state.ultimo_produto_valor = total_value
+                        st.session_state.aguardando_confirmacao_carrinho = True
+                        
+                        similares = find_similar_products_by_npk(
+                            st.session_state.ultimo_produto_cod_sku, 
+                            portfolio, 
+                            top_n=3
+                        )
+                        
+                        contexto_para_llm = (
+                            f"Cliente: {quantity} toneladas de '{st.session_state.ultimo_produto_nome}'. "
+                            f"Preço unitário: R$ {unit_price:.2f}. Total: R$ {total_value:.2f}. "
+                        )
+                        
+                        if similares:
+                            contexto_para_llm += f"\n\nHá {len(similares)} similares:\n"
+                            for s in similares:
+                                npk_str = f"{s.get('N', 'N/A')}-{s.get('P', 'N/A')}-{s.get('K', 'N/A')}"
+                                contexto_para_llm += f"- {s['sku_descricao']} (NPK: {npk_str})\n"
+                        
+                        contexto_para_llm += (
+                            "\n\nConfirme produto/quantidade. "
+                            f"Informe preço unitário R$ {unit_price:.2f} e total R$ {total_value:.2f}. "
+                            "AVISE: valor SEM FRETE. "
+                            "Pergunte se adiciona ao carrinho. "
+                        )
+                        
+                        if similares:
+                            contexto_para_llm += "Mencione similares disponíveis. "
+                        
+                        contexto_para_llm += "**NÃO oferecer vendedor**."
+                    else:
+                        st.session_state.ultimo_produto_quantidade = quantity
+                        st.session_state.ultimo_produto_valor = None
+                        st.session_state.aguardando_confirmacao_carrinho = True
+                        
+                        contexto_para_llm = (
+                            f"Cliente: {quantity} toneladas de '{st.session_state.ultimo_produto_nome}'. "
+                            "Sem preço - cotação personalizada. "
+                            "Confirme, pergunte se adiciona ao carrinho. "
+                            "**NÃO oferecer vendedor ainda**."
+                        )
+                    
+                    st.session_state.aguardando_quantidade = False
+            
+            # --- VERIFICA SE CLIENTE PEDIU PRODUTOS SIMILARES ---
+            elif is_similar_products_request(prompt):
+                produto_referenciado = None
+                text_lower = prompt.lower()
+                
+                # Procura produtos no carrinho mencionados explicitamente
+                for item in st.session_state.carrinho:
+                    produto_nome = item['produto'].lower()
+                    palavras_chave = [p for p in re.split(r'[\s\-/]+', produto_nome) if len(p) > 3 and not p.isdigit()]
+                    
+                    for palavra in palavras_chave:
+                        if palavra in text_lower:
+                            produto_referenciado = item
+                            break
+                    
+                    if produto_referenciado:
+                        break
+                
+                if produto_referenciado:
+                    cod_sku_ref = produto_referenciado['cod_sku']
+                    nome_ref = produto_referenciado['produto']
+                    
+                    similares = find_similar_products_by_npk(cod_sku_ref, portfolio, top_n=5)
+                    
+                    if similares:
+                        contexto_para_llm = (
+                            f"Cliente pediu similares especificamente ao **{nome_ref}** (que está no carrinho). "
+                            f"Encontrei {len(similares)} produtos similares:\n\n"
+                        )
+                        for s in similares:
+                            npk_str = f"{s.get('N', 'N/A')}-{s.get('P', 'N/A')}-{s.get('K', 'N/A')}"
+                            contexto_para_llm += f"- {s['sku_descricao']} (NPK: {npk_str})\n"
+                        
+                        contexto_para_llm += (
+                            f"\n\n**CRÍTICO**: Cliente pediu similares ao **{nome_ref}**, NÃO ao último produto.\n"
+                            "\nSua resposta deve:\n"
+                            f"1. Deixar MUITO CLARO: 'Produtos similares ao **{nome_ref}**:'\n"
+                            "2. Apresentar os produtos com NPKs\n"
+                            "3. Perguntar se quer cotação\n"
+                            "4. **NÃO oferecer vendedor**\n"
+                            "5. NUNCA sugerir produtos fora da lista"
+                        )
+                    else:
+                        contexto_para_llm = f"Sem similares ao '{nome_ref}'. Informe e ofereça outras opções."
+                
+                elif st.session_state.ultimo_produto_cod_sku:
+                    similares = find_similar_products_by_npk(
+                        st.session_state.ultimo_produto_cod_sku, 
+                        portfolio, 
+                        top_n=5
+                    )
+                    
+                    if similares:
+                        contexto_para_llm = (
+                            f"Cliente pediu similares (ref: '{st.session_state.ultimo_produto_nome}'). "
+                            f"Encontrei {len(similares)} produtos:\n\n"
+                        )
+                        for s in similares:
+                            npk_str = f"{s.get('N', 'N/A')}-{s.get('P', 'N/A')}-{s.get('K', 'N/A')}"
+                            contexto_para_llm += f"- {s['sku_descricao']} (NPK: {npk_str})\n"
+                        
+                        contexto_para_llm += "\n\nApresente produtos. **NÃO oferecer vendedor**."
+                    else:
+                        contexto_para_llm = "Sem similares. Sugira buscar por cultura."
+                else:
+                    contexto_para_llm = "Cliente pediu similares mas sem referência. Pergunte qual produto."
+            
             # --- VERIFICA SE ESTÁ AGUARDANDO CEP ---
-            if st.session_state.aguardando_cep:
+            elif st.session_state.aguardando_cep:
                 if is_valid_cep(prompt):
                     cep = extract_cep(prompt)
                     vendedor = find_vendor_by_cep(cep, pedidos)
                     
                     if vendedor and vendedor != "Vendedor Padrão da Matriz":
                         st.session_state.vendedor_atual = vendedor
-                        contexto_para_llm = (
-                            f"O cliente forneceu o CEP {cep}. "
-                            f"O vendedor responsável por esta região é: **{vendedor}**. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Agradecer por fornecer o CEP\n"
-                            f"2. Informar claramente: 'O vendedor responsável pela sua região é **{vendedor}**'\n"
-                            "3. Confirmar que o pedido será encaminhado para ele\n"
-                            f"4. Dizer: 'Em breve, **{vendedor}** entrará em contato com você'\n"
-                            "5. Perguntar se precisa de mais algo\n"
-                            "6. Ser amigável e profissional"
-                        )
-                    else:
-                        st.session_state.vendedor_atual = "Vendedor Padrão da Matriz"
-                        contexto_para_llm = (
-                            f"O cliente forneceu o CEP {cep}, mas não há vendedor específico cadastrado para esta região. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Agradecer por fornecer o CEP\n"
-                            "2. Informar que vamos encaminhar para nossa equipe comercial\n"
-                            "3. Dizer que um vendedor entrará em contato em breve\n"
-                            "4. Perguntar se precisa de mais algo\n"
-                            "5. Ser amigável"
-                        )
-                    
-                    # Reseta o estado de aguardar CEP
-                    st.session_state.aguardando_cep = False
-                else:
-                    contexto_para_llm = (
-                        "O cliente forneceu algo que não é um CEP válido. "
-                        "\n\nSua resposta deve:\n"
-                        "1. Informar gentilmente que o CEP deve ter 8 dígitos\n"
-                        "2. Dar exemplo: '01310-100' ou '01310100'\n"
-                        "3. Pedir o CEP novamente"
-                    )
-            
-            # --- VERIFICA SE MENSAGEM CONTÉM PEDIDO DE VENDEDOR + CEP JUNTOS ---
-            elif is_vendor_request(prompt) and contains_cep(prompt):
-                cep = extract_cep(prompt)
-                if cep:
-                    vendedor = find_vendor_by_cep(cep, pedidos)
-                    
-                    if vendedor and vendedor != "Vendedor Padrão da Matriz":
-                        st.session_state.vendedor_atual = vendedor
-                        contexto_para_llm = (
-                            f"O cliente pediu encaminhamento e forneceu CEP {cep}. "
-                            f"O vendedor responsável é: **{vendedor}**. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Confirmar recebimento do pedido e CEP\n"
-                            f"2. Informar claramente: 'O vendedor responsável pela sua região é **{vendedor}**'\n"
-                            "3. Se houver itens mencionados, liste brevemente\n"
-                            "4. Confirmar encaminhamento para este vendedor\n"
-                            f"5. Dizer: '**{vendedor}** entrará em contato em breve para finalizar'\n"
-                            "6. Agradecer"
-                        )
+                        contexto_para_llm = f"CEP {cep}. Vendedor: **{vendedor}**. Confirme encaminhamento."
                     else:
                         st.session_state.vendedor_atual = "Equipe Comercial"
-                        contexto_para_llm = (
-                            f"O cliente pediu encaminhamento e forneceu CEP {cep}. "
-                            "Não há vendedor específico para esta região. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Confirmar recebimento\n"
-                            "2. Informar que será encaminhado para equipe comercial\n"
-                            "3. Se houver itens, liste brevemente\n"
-                            "4. Dizer que um vendedor entrará em contato\n"
-                            "5. Agradecer"
-                        )
+                        contexto_para_llm = f"CEP {cep} sem vendedor específico. Equipe comercial."
+                    
+                    st.session_state.aguardando_cep = False
+                else:
+                    contexto_para_llm = "CEP inválido. Peça 8 dígitos."
             
-            # --- VERIFICA SE CLIENTE QUER FALAR COM VENDEDOR (SEM CEP) ---
+            # --- VERIFICA SE CLIENTE QUER VENDEDOR ---
             elif is_vendor_request(prompt):
-                contexto_para_llm = (
-                    "O cliente quer falar com vendedor. "
-                    "\n\nSua resposta deve:\n"
-                    "1. Confirmar que vai encaminhar\n"
-                    "2. Pedir o CEP para identificar o vendedor da região\n"
-                    "3. Explicar que cada região tem seu vendedor específico\n"
-                    "4. Ser prestativo"
-                )
-                st.session_state.aguardando_cep = True
+                if contains_cep(prompt):
+                    cep = extract_cep(prompt)
+                    vendedor = find_vendor_by_cep(cep, pedidos)
+                    if vendedor and vendedor != "Vendedor Padrão da Matriz":
+                        st.session_state.vendedor_atual = vendedor
+                        contexto_para_llm = f"Cliente quer vendedor, CEP {cep}. Vendedor: **{vendedor}**."
+                    else:
+                        contexto_para_llm = f"Cliente quer vendedor, CEP {cep}, sem específico."
+                else:
+                    contexto_para_llm = "Cliente quer vendedor. Peça CEP."
+                    st.session_state.aguardando_cep = True
             
-            # --- FLUXO INTELIGENTE DE CONTEXTO ---
-            
-            # 1. Saudação
+            # --- SAUDAÇÃO ---
             elif is_greeting(prompt) and len(prompt.split()) <= 3:
-                contexto_para_llm = (
-                    "O cliente cumprimentou. "
-                    "Responda amigavelmente e pergunte como pode ajudar."
-                )
+                contexto_para_llm = "Cliente cumprimentou. Responda amigavelmente."
             
-            # 2. Pedido de cotação
+            # --- PEDIDO COM QUANTIDADE ---
             else:
                 quantity, product_name = parse_order_request(prompt)
                 
                 if quantity and product_name:
-                    total_value, cod_sku, nome_real = calcular_valor_total(product_name, quantity, portfolio, precos)
+                    # Se há produto aguardando confirmação, adiciona automaticamente ao carrinho
+                    if st.session_state.aguardando_confirmacao_carrinho and st.session_state.ultimo_produto_nome:
+                        item_info = {
+                            'produto': st.session_state.ultimo_produto_nome,
+                            'quantidade': st.session_state.ultimo_produto_quantidade,
+                            'valor': st.session_state.ultimo_produto_valor,
+                            'cod_sku': st.session_state.ultimo_produto_cod_sku
+                        }
+                        st.session_state.carrinho.append(item_info)
+                        st.session_state.aguardando_confirmacao_carrinho = False
                     
-                    if total_value is not None:
-                        # Produto encontrado COM preço
-                        contexto_para_llm = (
-                            f"O cliente pediu {quantity} unidades/toneladas de '{product_name}'. "
-                            f"Produto encontrado: '{nome_real}' (código {cod_sku}). "
-                            f"Valor total: R$ {total_value:.2f}. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Confirmar o produto correto\n"
-                            "2. Informar o valor total: R$ {total_value:.2f}\n"
-                            "3. **AVISAR**: 'Este valor NÃO INCLUI FRETE'\n"
-                            "4. Perguntar se quer adicionar ao carrinho\n"
-                            "5. Oferecer falar com vendedor para cotação completa com frete"
-                        )
+                    total_value, cod_sku, nome_real, unit_price = calcular_valor_total(
+                        product_name, quantity, portfolio, precos
+                    )
                     
-                    elif nome_real:
-                        # Produto encontrado SEM preço
-                        contexto_para_llm = (
-                            f"O cliente pediu {quantity} unidades/toneladas de '{product_name}'. "
-                            f"Produto encontrado: '{nome_real}'. "
-                            "Mas o preço não está disponível no sistema. "
-                            "\n\nSua resposta deve:\n"
-                            "1. Confirmar que encontrou o produto: '{nome_real}'\n"
-                            "2. Confirmar a quantidade solicitada: {quantity}\n"
-                            "3. Explicar que para produtos especiais ou grandes volumes, "
-                            "a cotação precisa ser feita diretamente com o vendedor\n"
-                            "4. Perguntar se deseja que encaminhe para um vendedor fazer a cotação completa\n"
-                            "5. NÃO mencionar que 'não tem preço disponível' - focar em 'cotação personalizada'\n"
-                            "6. Ser positivo e prestativo"
-                        )
-                    
-                    else:
-                        # Produto NÃO encontrado
-                        produtos_similares = find_product_by_name(product_name, portfolio, similarity_threshold=0.4)
-                        alternativas_npk = find_alternatives_by_npk(product_name, portfolio)
+                    if total_value is not None and unit_price is not None:
+                        st.session_state.ultimo_produto_cod_sku = cod_sku
+                        st.session_state.ultimo_produto_nome = nome_real
+                        st.session_state.ultimo_produto_quantidade = quantity
+                        st.session_state.ultimo_produto_valor = total_value
+                        st.session_state.aguardando_confirmacao_carrinho = True
                         
-                        if produtos_similares or alternativas_npk:
-                            contexto_para_llm = (
-                                f"O cliente pediu '{product_name}', mas não encontrei exato. "
-                                "Encontrei similares:\n\n"
-                            )
-                            
-                            if produtos_similares:
-                                contexto_para_llm += "--- SIMILARES ---\n"
-                                for p in produtos_similares[:3]:
-                                    contexto_para_llm += f"- {p['sku_descricao']} (NPK: {p.get('N', 'N/A')}-{p.get('P', 'N/A')}-{p.get('K', 'N/A')})\n"
-                            
-                            if alternativas_npk:
-                                contexto_para_llm += "\n--- NPK SIMILAR ---\n"
-                                for p in alternativas_npk[:3]:
-                                    contexto_para_llm += f"- {p['sku_descricao']} (NPK: {p.get('N', 'N/A')}-{p.get('P', 'N/A')}-{p.get('K', 'N/A')})\n"
-                            
-                            contexto_para_llm += (
-                                "\n\nSua resposta deve:\n"
-                                "1. Dizer que não encontrou nome exato\n"
-                                "2. Apresentar alternativas claramente\n"
-                                "3. Perguntar se alguma é o que procura\n"
-                                "4. NÃO oferecer vendedor ainda"
-                            )
+                        contexto_para_llm = (
+                            f"Cliente: {quantity} de '{product_name}'. Produto: '{nome_real}'. "
+                            f"Preço: R$ {unit_price:.2f}. Total: R$ {total_value:.2f} (SEM FRETE). "
+                            "Informe valores, pergunte se adiciona. **NÃO oferecer vendedor**."
+                        )
+                    elif nome_real:
+                        st.session_state.ultimo_produto_cod_sku = cod_sku
+                        st.session_state.ultimo_produto_nome = nome_real
+                        st.session_state.ultimo_produto_quantidade = quantity
+                        st.session_state.ultimo_produto_valor = None
+                        st.session_state.aguardando_confirmacao_carrinho = True
+                        contexto_para_llm = f"'{nome_real}' sem preço. Cotação personalizada. Pergunte se adiciona."
+                    else:
+                        produtos_similares = find_product_by_name(product_name, portfolio, similarity_threshold=0.4)
+                        if produtos_similares:
+                            contexto_para_llm = f"'{product_name}' não encontrado. Alternativas:\n"
+                            for p in produtos_similares[:3]:
+                                contexto_para_llm += f"- {p['sku_descricao']}\n"
+                            contexto_para_llm += "Pergunte se é um desses."
                         else:
-                            contexto_para_llm = (
-                                f"Não encontrei '{product_name}' nem similares. "
-                                "\n\nSua resposta deve:\n"
-                                "1. Informar que não encontrou\n"
-                                "2. Pedir mais detalhes (NPK, aplicação)\n"
-                                "3. Sugerir buscar por cultura\n"
-                                "4. Oferecer ajuda"
-                            )
-
+                            contexto_para_llm = "Produto não encontrado. Peça mais detalhes."
+                
                 else:
-                    # Busca direta de produto
+                    # Busca SEM quantidade
+                    # Se há produto aguardando confirmação, adiciona ao carrinho primeiro
+                    if st.session_state.aguardando_confirmacao_carrinho and st.session_state.ultimo_produto_nome:
+                        item_info = {
+                            'produto': st.session_state.ultimo_produto_nome,
+                            'quantidade': st.session_state.ultimo_produto_quantidade,
+                            'valor': st.session_state.ultimo_produto_valor,
+                            'cod_sku': st.session_state.ultimo_produto_cod_sku
+                        }
+                        st.session_state.carrinho.append(item_info)
+                        st.session_state.aguardando_confirmacao_carrinho = False
+                    
                     produtos_encontrados = find_product_by_name(prompt, portfolio, similarity_threshold=0.5)
                     
                     if produtos_encontrados:
-                        contexto_para_llm = (
-                            f"Cliente buscou '{prompt}'. Encontrei:\n\n"
-                        )
+                        st.session_state.ultimo_produto_cod_sku = produtos_encontrados[0]['cod_sku']
+                        st.session_state.ultimo_produto_nome = produtos_encontrados[0]['sku_descricao']
+                        st.session_state.aguardando_quantidade = True
+                        
+                        # Informa que produto anterior foi adicionado
+                        if len(st.session_state.carrinho) > 0:
+                            ultimo_item = st.session_state.carrinho[-1]
+                            contexto_para_llm = (
+                                f"Adicionei automaticamente ao carrinho: "
+                                f"{ultimo_item['produto']} ({ultimo_item['quantidade']} ton).\n\n"
+                                f"Agora, cliente buscou '{prompt}'. Produtos encontrados:\n"
+                            )
+                        else:
+                            contexto_para_llm = f"Cliente buscou '{prompt}'. Produtos:\n"
+                        
                         for p in produtos_encontrados[:5]:
                             npk_str = f"{p.get('N', 'N/A')}-{p.get('P', 'N/A')}-{p.get('K', 'N/A')}"
                             contexto_para_llm += f"- {p['sku_descricao']} (NPK: {npk_str})\n"
-                        
-                        contexto_para_llm += (
-                            "\n\nSua resposta deve:\n"
-                            "1. Mostrar produtos\n"
-                            "2. Perguntar se quer info sobre algum\n"
-                            "3. Oferecer cotação"
-                        )
+                        contexto_para_llm += "\nPERGUNTAR quantidade. **NÃO oferecer vendedor**."
                     
                     else:
                         # Busca por cultura
@@ -319,20 +482,10 @@ if prompt := st.chat_input("Digite o nome de um produto, cultura ou sua dúvida.
                         if cultura_encontrada:
                             recomendacoes = recomendar_por_cultura(cultura_encontrada, portfolio)
                             if recomendacoes:
-                                contexto_para_llm = (
-                                    f"Cliente perguntou sobre '{cultura_encontrada}'. "
-                                    f"Encontrei {len(recomendacoes)} produtos:\n\n"
-                                )
+                                contexto_para_llm = f"Cultura '{cultura_encontrada}'. Produtos:\n"
                                 for r in recomendacoes[:5]:
-                                    npk_str = f"{r.get('N', 'N/A')}-{r.get('P', 'N/A')}-{r.get('K', 'N/A')}"
-                                    contexto_para_llm += f"- {r['sku_descricao']} (NPK: {npk_str})\n"
-                                
-                                contexto_para_llm += (
-                                    "\n\nSua resposta deve:\n"
-                                    "1. Apresentar produtos para cultura\n"
-                                    "2. Perguntar se quer detalhes\n"
-                                    "3. Oferecer cotação"
-                                )
+                                    contexto_para_llm += f"- {r['sku_descricao']}\n"
+                                contexto_para_llm += "Apresente opções."
             
             # Envia para o LLM
             resposta_llm = st.session_state.agent.send_message(prompt, contexto_para_llm)
@@ -342,25 +495,37 @@ if prompt := st.chat_input("Digite o nome de um produto, cultura ou sua dúvida.
 
 # --- Sidebar ---
 with st.sidebar:
-    st.header("ℹ️ Dicas de uso")
-    st.markdown("""
-    **Como usar:**
-    - Nome ou NPK: "Aspire" ou "10 20 20"
-    - Cotação: "20 toneladas de Aspire"
-    - Cultura: "produtos para café"
-    - Vendedor: "Quero falar com vendedor"
-    
-    **Funcionalidades:**
-    ✅ Busca inteligente
-    ✅ Cotações (sem frete)
-    ✅ Recomendações por cultura
-    ✅ Encaminhamento para vendedor
-    """)
+    st.header("ℹ️ Informações")
     
     if st.session_state.carrinho:
         st.header("🛒 Carrinho")
-        for item in st.session_state.carrinho:
-            st.write(f"- {item}")
+        total_geral = 0
+        for i, item in enumerate(st.session_state.carrinho):
+            produto = item['produto']
+            quantidade = item.get('quantidade', 'N/A')
+            valor = item.get('valor')
+            
+            st.write(f"**{i+1}. {produto}**")
+            st.write(f"   Qtd: {quantidade} ton")
+            if valor:
+                st.write(f"   Valor: R$ {valor:.2f}")
+                total_geral += valor
+            else:
+                st.write(f"   Valor: Cotação")
+            st.write("---")
+        
+        if total_geral > 0:
+            st.write(f"**Total (sem frete): R$ {total_geral:.2f}**")
+        st.write(f"**{len(st.session_state.carrinho)} itens**")
+    
+    if st.session_state.ultimo_produto_nome:
+        st.info(f"📦 Último: {st.session_state.ultimo_produto_nome}")
+    
+    if st.session_state.aguardando_quantidade:
+        st.warning("⏳ Aguardando quantidade...")
+    
+    if st.session_state.aguardando_confirmacao_carrinho:
+        st.warning("⏳ Aguardando confirmação...")
     
     if st.session_state.aguardando_cep:
         st.warning("⏳ Aguardando CEP...")
@@ -368,13 +533,19 @@ with st.sidebar:
     if st.session_state.vendedor_atual:
         st.success(f"👤 Vendedor: {st.session_state.vendedor_atual}")
     
-    if st.button("🗑️ Limpar conversa"):
+    if st.button("🗑️ Limpar tudo"):
         st.session_state.messages = [
             {"role": "assistant", "content": "Olá! Como posso ajudar você a encontrar o fertilizante ideal hoje?"}
         ]
         st.session_state.carrinho = []
         st.session_state.aguardando_cep = False
+        st.session_state.aguardando_quantidade = False
+        st.session_state.aguardando_confirmacao_carrinho = False
         st.session_state.vendedor_atual = None
+        st.session_state.ultimo_produto_cod_sku = None
+        st.session_state.ultimo_produto_nome = None
+        st.session_state.ultimo_produto_quantidade = None
+        st.session_state.ultimo_produto_valor = None
         st.rerun()
 
 # import streamlit as st
